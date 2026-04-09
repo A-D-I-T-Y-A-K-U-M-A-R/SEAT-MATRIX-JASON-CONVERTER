@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-
 <meta charset="UTF-8">
-<title>Seat Matrix → preferred_data.json Converter</title>
-
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<title>Excel Copy → JSON Row Converter</title>
 
 <style>
 body{
@@ -14,11 +12,9 @@ margin:40px;
 background:#f5f5f5;
 }
 
-h1{ color:#222; }
-
 textarea{
 width:100%;
-height:200px;
+height:220px;
 padding:10px;
 margin-top:10px;
 font-size:14px;
@@ -34,12 +30,8 @@ cursor:pointer;
 margin-top:15px;
 }
 
-button:hover{ background:#1e40af; }
-
-#status{
-margin-top:15px;
-font-weight:bold;
-color:green;
+button:hover{
+background:#1e40af;
 }
 </style>
 
@@ -47,120 +39,62 @@ color:green;
 
 <body>
 
-<h1>Excel → preferred_data.json Converter</h1>
+<h2>Paste Excel Data</h2>
 
-<p>Select all 9 Excel files</p>
-
-<input type="file" id="files" multiple accept=".xlsx">
+<textarea id="input"></textarea>
 
 <br>
 
-<button onclick="convertExcel()">CONVERT EXCEL</button>
+<button onclick="convert()">Convert</button>
 
-<div id="status"></div>
+<h2>Output (Row Format)</h2>
 
-<h2>Preview JSON</h2>
 <textarea id="output"></textarea>
 
 <script>
 
-let finalData = {
-  "ROUND 1 JOSSA 2025": [],
-  "ROUND 2 JOSSA 2025": [],
-  "ROUND 3 JOSSA 2025": [],
-  "ROUND 4 JOSSA 2025": [],
-  "ROUND 5 JOSSA 2025": [],
-  "ROUND 6 JOSSA 2025": [],
-  "ROUND 1 CSAB 2025": [],
-  "ROUND 2 CSAB 2025": [],
-  "ROUND 3 CSAB 2025": []
-};
+function convert(){
 
-// 🔥 FILE NAME CLEANER
-function normalize(name){
-  return name.replace(".xlsx","").toUpperCase().trim();
-}
+let lines = document.getElementById("input").value.split("\n");
 
-// 🔥 MAIN CONVERSION
-function convertExcel(){
+let result = [];
 
-let files = document.getElementById("files").files;
+lines.forEach(function(line, index){
 
-if(files.length === 0){
-  alert("Select Excel files first");
-  return;
-}
+line = line.trim();
 
-let promises = [];
+// skip empty + header
+if(line === "" || index === 0) return;
 
-for(let file of files){
+// Excel tab split
+let parts = line.split("\t");
 
-promises.push(new Promise(resolve=>{
+if(parts.length >= 6){
 
-let reader = new FileReader();
+let row = `{ "Institute": "${parts[0].trim()}", "Academic Program Name": "${parts[1].replace(/"/g,"").trim()}", "Quota": "${parts[2].trim()}", "Gender": "${parts[3].trim()}", "Opening Rank": ${Number(parts[4])}, "Closing Rank": ${Number(parts[5])} }`;
 
-reader.onload = function(e){
-
-let data = new Uint8Array(e.target.result);
-
-let workbook = XLSX.read(data, {type:"array"});
-let sheet = workbook.Sheets[workbook.SheetNames[0]];
-
-// 🔥 DIRECT JSON (SAME AS EXCEL)
-let json = XLSX.utils.sheet_to_json(sheet);
-
-// 🔥 MATCH FILE NAME
-let key = Object.keys(finalData).find(k =>
-  normalize(file.name).includes(k)
-);
-
-if(key){
-  finalData[key] = json;
-}else{
-  console.warn("File not matched:", file.name);
-}
-
-resolve();
-
-};
-
-reader.readAsArrayBuffer(file);
-
-}));
+result.push(row);
 
 }
-
-Promise.all(promises).then(()=>{
-
-document.getElementById("status").innerText = "✅ Conversion Done";
-
-// preview
-document.getElementById("output").value =
-JSON.stringify(finalData, null, 2);
 
 });
 
+// 🔥 COMMA LOGIC (last me comma nahi)
+let finalOutput = "";
+
+result.forEach((row, i)=>{
+if(i !== result.length - 1){
+finalOutput += row + ",\n";
+}else{
+finalOutput += row;
 }
+});
 
-// 🔥 DOWNLOAD FUNCTION
-function downloadJSON(){
-
-let blob = new Blob(
-[JSON.stringify(finalData,null,2)],
-{type:"application/json"}
-);
-
-let a = document.createElement("a");
-a.href = URL.createObjectURL(blob);
-a.download = "preferred_data.json";
-a.click();
+document.getElementById("output").value = finalOutput;
 
 }
 
 </script>
-
-<br>
-<button onclick="downloadJSON()">DOWNLOAD JSON</button>
 
 </body>
 </html>
