@@ -4,18 +4,13 @@
 
 <head>
 <meta charset="UTF-8">
-<title>College JSON Converter</title>
+<title>Smart JSON Converter</title>
 
 <style>
-
 body{
 font-family: Arial;
 margin:40px;
 background:#f5f5f5;
-}
-
-h1{
-color:#222;
 }
 
 textarea{
@@ -39,22 +34,19 @@ margin-top:15px;
 button:hover{
 background:#1e40af;
 }
-
 </style>
 
 </head>
 
 <body>
 
-<h1>College Data → JSON Converter</h1>
-
-<p>Paste your data below</p>
+<h2>Paste Excel Data</h2>
 
 <textarea id="input"></textarea>
 
 <br>
 
-<button onclick="convert()">Convert to JSON</button>
+<button onclick="convert()">Convert</button>
 
 <h2>Output JSON</h2>
 
@@ -62,67 +54,55 @@ background:#1e40af;
 
 <script>
 
-function getType(inst){
+// 🔥 SMART CLEAN FUNCTION
+function clean(text){
+text = text.trim();
 
-inst = inst.toLowerCase()
-
-if(inst.includes("indian institute of technology"))
-return "IIT"
-
-if(inst.includes("national institute of technology"))
-return "NIT"
-
-if(inst.includes("information technology"))
-return "IIIT"
-
-return "GFTI"
-
+// remove only outer quotes (not inner content)
+if(text.startsWith('"') && text.endsWith('"')){
+text = text.slice(1, -1);
 }
 
-function clean(text){
-return text.replace(/"/g, "").trim(); // 🔥 FIX: remove extra quotes
+// remove accidental double quotes anywhere
+text = text.replace(/""/g, '"');
+
+return text.trim();
 }
 
 function convert(){
 
-let lines=document.getElementById("input").value.split("\n")
-
-let result=[]
+let lines = document.getElementById("input").value.split("\n");
+let result = [];
 
 lines.forEach(function(line){
 
-line=line.trim()
+line = line.trim();
+if(line==="") return;
 
-if(line==="") return
+// Excel tab split
+let parts = line.split("\t");
 
-let parts=line.split(/\s{2,}/)
+if(parts.length >= 6){
 
-if(parts.length>=2){
+let row = `{ "Institute": "${clean(parts[0])}", "Academic Program Name": "${clean(parts[1])}", "Quota": "${clean(parts[2])}", "Gender": "${clean(parts[3])}", "Opening Rank": ${Number(parts[4])}, "Closing Rank": ${Number(parts[5])} }`;
 
-let inst=clean(parts[0])
-let branch=clean(parts.slice(1).join(" "))
-let type=getType(inst)
-
-let row = `{"inst":"${inst}","branch":"${branch}","type":"${type}"}`
-
-result.push(row)
-
+result.push(row);
 }
 
-})
+});
 
-// 🔥 LAST COMMA FIX
-let finalOutput=""
+// 🔥 last comma fix
+let finalOutput = "";
 
 result.forEach((row,i)=>{
 if(i !== result.length-1){
-finalOutput += row + ",\n"
+finalOutput += row + ",\n";
 }else{
-finalOutput += row
+finalOutput += row;
 }
-})
+});
 
-document.getElementById("output").value=finalOutput
+document.getElementById("output").value = finalOutput;
 
 }
 
