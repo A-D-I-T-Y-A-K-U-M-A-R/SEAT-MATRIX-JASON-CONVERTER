@@ -1,26 +1,24 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
+
 <meta charset="UTF-8">
-<title>College JSON Converter</title>
+<title>Seat Matrix → preferred_data.json Converter</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
-
 body{
 font-family: Arial;
 margin:40px;
 background:#f5f5f5;
 }
 
-h1{
-color:#222;
-}
+h1{ color:#222; }
 
 textarea{
 width:100%;
-height:250px;
+height:200px;
 padding:10px;
 margin-top:10px;
 font-size:14px;
@@ -36,82 +34,133 @@ cursor:pointer;
 margin-top:15px;
 }
 
-button:hover{
-background:#1e40af;
-}
+button:hover{ background:#1e40af; }
 
+#status{
+margin-top:15px;
+font-weight:bold;
+color:green;
+}
 </style>
 
 </head>
 
 <body>
 
-<h1>College Data → JSON Converter</h1>
+<h1>Excel → preferred_data.json Converter</h1>
 
-<p>Paste your data below</p>
+<p>Select all 9 Excel files</p>
 
-<textarea id="input"></textarea>
+<input type="file" id="files" multiple accept=".xlsx">
 
 <br>
 
-<button onclick="convert()">Convert to JSON</button>
+<button onclick="convertExcel()">CONVERT EXCEL</button>
 
-<h2>Output JSON</h2>
+<div id="status"></div>
 
+<h2>Preview JSON</h2>
 <textarea id="output"></textarea>
 
 <script>
 
-function getType(inst){
+let finalData = {
+  "ROUND 1 JOSSA 2025": [],
+  "ROUND 2 JOSSA 2025": [],
+  "ROUND 3 JOSSA 2025": [],
+  "ROUND 4 JOSSA 2025": [],
+  "ROUND 5 JOSSA 2025": [],
+  "ROUND 6 JOSSA 2025": [],
+  "ROUND 1 CSAB 2025": [],
+  "ROUND 2 CSAB 2025": [],
+  "ROUND 3 CSAB 2025": []
+};
 
-inst = inst.toLowerCase()
+// 🔥 FILE NAME CLEANER
+function normalize(name){
+  return name.replace(".xlsx","").toUpperCase().trim();
+}
 
-if(inst.includes("indian institute of technology"))
-return "IIT"
+// 🔥 MAIN CONVERSION
+function convertExcel(){
 
-if(inst.includes("national institute of technology"))
-return "NIT"
+let files = document.getElementById("files").files;
 
-if(inst.includes("information technology"))
-return "IIIT"
+if(files.length === 0){
+  alert("Select Excel files first");
+  return;
+}
 
-return "GFTI"
+let promises = [];
+
+for(let file of files){
+
+promises.push(new Promise(resolve=>{
+
+let reader = new FileReader();
+
+reader.onload = function(e){
+
+let data = new Uint8Array(e.target.result);
+
+let workbook = XLSX.read(data, {type:"array"});
+let sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+// 🔥 DIRECT JSON (SAME AS EXCEL)
+let json = XLSX.utils.sheet_to_json(sheet);
+
+// 🔥 MATCH FILE NAME
+let key = Object.keys(finalData).find(k =>
+  normalize(file.name).includes(k)
+);
+
+if(key){
+  finalData[key] = json;
+}else{
+  console.warn("File not matched:", file.name);
+}
+
+resolve();
+
+};
+
+reader.readAsArrayBuffer(file);
+
+}));
 
 }
 
-function convert(){
+Promise.all(promises).then(()=>{
 
-let lines=document.getElementById("input").value.split("\n")
+document.getElementById("status").innerText = "✅ Conversion Done";
 
-let result=""
+// preview
+document.getElementById("output").value =
+JSON.stringify(finalData, null, 2);
 
-lines.forEach(function(line){
-
-line=line.trim()
-
-if(line==="") return
-
-let parts=line.split(/\s{2,}/)
-
-if(parts.length>=2){
-
-let inst=parts[0].trim()
-
-let branch=parts.slice(1).join(" ").trim()
-
-let type=getType(inst)
-
-result += `{"inst":"${inst}","branch":"${branch}","type":"${type}"},\n`
+});
 
 }
 
-})
+// 🔥 DOWNLOAD FUNCTION
+function downloadJSON(){
 
-document.getElementById("output").value=result
+let blob = new Blob(
+[JSON.stringify(finalData,null,2)],
+{type:"application/json"}
+);
+
+let a = document.createElement("a");
+a.href = URL.createObjectURL(blob);
+a.download = "preferred_data.json";
+a.click();
 
 }
 
 </script>
+
+<br>
+<button onclick="downloadJSON()">DOWNLOAD JSON</button>
 
 </body>
 </html>
