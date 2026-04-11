@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Advanced JSON Converter (7 Columns)</title>
+<title>Excel to JSON (9 Files Direct Upload)</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
 body{
@@ -11,48 +13,38 @@ margin:30px;
 background:#f5f5f5;
 }
 
-textarea{
-width:100%;
-height:120px;
-padding:10px;
-margin-top:10px;
-font-size:14px;
+.section{
+margin-bottom:20px;
 }
 
 button{
 padding:12px 20px;
-font-size:16px;
 background:#2563eb;
 color:white;
 border:none;
 cursor:pointer;
+}
+
+textarea{
+width:100%;
+height:300px;
 margin-top:20px;
-}
-
-button:hover{
-background:#1e40af;
-}
-
-.section{
-margin-bottom:25px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🔥 9 FILE JSON CONVERTER (7 COLUMNS)</h1>
+<h1>🔥 DIRECT EXCEL → JSON (9 FILES)</h1>
 
 <div id="inputs"></div>
 
 <button onclick="convert()">GET JSON</button>
 
-<h2>FINAL JSON OUTPUT</h2>
-<textarea id="output" style="height:320px;"></textarea>
+<textarea id="output"></textarea>
 
 <script>
 
-// 🔥 ROUND NAMES (EXACT SAME)
 const rounds = [
 "ROUND 1 JOSSA 2025",
 "ROUND 2 JOSSA 2025",
@@ -65,7 +57,7 @@ const rounds = [
 "ROUND 3 CSAB 2025"
 ];
 
-// 🔥 CREATE INPUT BOXES
+// create file inputs
 let container = document.getElementById("inputs");
 
 rounds.forEach((r,i)=>{
@@ -73,14 +65,14 @@ let div = document.createElement("div");
 div.className = "section";
 
 div.innerHTML = `<h3>${r}</h3>
-<textarea id="input${i}" placeholder="Paste Excel TXT here..."></textarea>`;
+<input type="file" id="file${i}" accept=".xlsx,.csv,.txt">`;
 
 container.appendChild(div);
 });
 
-// 🔥 CLEAN FUNCTION
 function clean(text){
-text = text.trim();
+if(!text) return "";
+text = text.toString().trim();
 
 if(text.startsWith('"') && text.endsWith('"')){
 text = text.slice(1,-1);
@@ -91,37 +83,54 @@ text = text.replace(/""/g,'"');
 return text.trim();
 }
 
-// 🔥 CONVERT FUNCTION
-function convert(){
+async function readFile(file){
+return new Promise((resolve)=>{
+
+let reader = new FileReader();
+
+reader.onload = function(e){
+let data = new Uint8Array(e.target.result);
+let workbook = XLSX.read(data, {type:'array'});
+let sheet = workbook.Sheets[workbook.SheetNames[0]];
+let json = XLSX.utils.sheet_to_json(sheet, {header:1});
+resolve(json);
+};
+
+reader.readAsArrayBuffer(file);
+
+});
+}
+
+async function convert(){
 
 let finalJSON = "{\n";
 
-rounds.forEach((round,index)=>{
+for(let index=0; index<rounds.length; index++){
 
-let input = document.getElementById("input"+index).value;
-let lines = input.split("\n");
+let fileInput = document.getElementById("file"+index);
+let file = fileInput.files[0];
 
 let rows = [];
 
-lines.forEach(line=>{
+if(file){
 
-line = line.trim();
-if(line==="") return;
+let data = await readFile(file);
 
-let parts = line.split("\t");
+data.forEach(parts=>{
 
-// 🔥 NOW 7 COLUMNS REQUIRED
 if(parts.length >= 7){
 
 let row = `{ "Institute": "${clean(parts[0])}", "Academic Program Name": "${clean(parts[1])}", "Quota": "${clean(parts[2])}", "Gender": "${clean(parts[3])}", "Opening Rank": ${Number(parts[4])}, "Closing Rank": ${Number(parts[5])}, "Seat Type": "${clean(parts[6])}" }`;
 
 rows.push(row);
+
 }
 
 });
 
-// 🔥 ROUND HEADER
-finalJSON += `"${round}": [\n\n`;
+}
+
+finalJSON += `"${rounds[index]}": [\n\n`;
 
 rows.forEach((r,i)=>{
 if(i !== rows.length-1){
@@ -137,7 +146,7 @@ if(index !== rounds.length-1){
 finalJSON += ",\n\n";
 }
 
-});
+}
 
 finalJSON += "\n}";
 
