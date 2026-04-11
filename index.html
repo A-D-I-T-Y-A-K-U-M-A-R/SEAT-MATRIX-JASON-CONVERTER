@@ -116,7 +116,10 @@ if(file){
 
 let data = await readFile(file);
 
-data.forEach(parts=>{
+data.forEach((parts,index)=>{
+
+// 🔥 SKIP HEADER ROW
+if(index === 0) return;
 
 if(parts.length >= 7){
 
