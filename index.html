@@ -123,16 +123,19 @@ if(index === 0) return;
 
 if(parts.length >= 7){
 
+let programName = clean(parts[1]).toLowerCase();
+
+// 🔥 SKIP only exact word "architecture"
+if(/\barchitecture\b/.test(programName)) return;
+
 let opening = Number(parts[4]);
 let closing = Number(parts[5]);
 
-// 🔥 SKIP NaN ROWS
 if(isNaN(opening) || isNaN(closing)) return;
 
 let row = `{ "Institute": "${clean(parts[0])}", "Academic Program Name": "${clean(parts[1])}", "Quota": "${clean(parts[2])}", "Gender": "${clean(parts[3])}", "Opening Rank": ${opening}, "Closing Rank": ${closing}, "Seat Type": "${clean(parts[6])}" }`;
 
 rows.push(row);
-
 }
 
 });
