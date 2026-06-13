@@ -123,10 +123,8 @@ if(index === 0) return;
 
 if(parts.length >= 7){
 
-let programName = clean(parts[1]).toLowerCase();
 
-// 🔥 SKIP only exact word "architecture"
-if(/\barchitecture\b/.test(programName)) return;
+
 
 let opening = Number(parts[4]);
 let closing = Number(parts[5]);
